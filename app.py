@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import warnings
-warnings.filterwarnings('ignore')
 
 st.set_page_config(
     page_title="Nifty 500 Multi-Strategy Screener",
@@ -29,11 +27,11 @@ def load_trading_signals():
     })
 
 st.title("📊 Nifty 500 Multi-Strategy Technical Screener")
-st.markdown("Advanced Trading Signals with Institutional Footprint Analysis")
+st.markdown("Advanced Trading Signals Dashboard")
 st.markdown("---")
 
 with st.sidebar:
-    st.header("⚙️ Configuration Panel")
+    st.header("⚙️ Configuration")
     selected_strategies = st.multiselect(
         "Select Strategies:",
         ["Demand Zone Reversal", "RS Momentum Surge", "Both"],
@@ -45,23 +43,16 @@ with st.sidebar:
         default=["Financial", "IT"]
     )
     min_winrate = st.slider(
-        "Minimum Backtest Win Rate (%):",
+        "Minimum Win Rate (%):",
         min_value=50,
         max_value=95,
         value=65,
         step=5
     )
-    min_rr = st.slider(
-        "Minimum Risk-Reward Ratio:",
-        min_value=1.0,
-        max_value=5.0,
-        value=2.0,
-        step=0.5
-    )
     st.markdown("---")
     if st.button("Refresh Data", use_container_width=True):
         st.rerun()
-    st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.caption(f"Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 df_signals = load_trading_signals()
 df_filtered = df_signals[
@@ -71,45 +62,36 @@ df_filtered = df_signals[
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Total Signals", len(df_filtered), "+2")
+    st.metric("Total Signals", len(df_filtered))
 with col2:
     avg_wr = df_filtered["Backtest_WinRate"].mean() if len(df_filtered) > 0 else 0
-    st.metric("Avg Win Rate", f"{avg_wr:.1f}%", "+2.5%")
+    st.metric("Avg Win Rate", f"{avg_wr:.1f}%")
 with col3:
-    st.metric("Top Sector", "IT", "3 signals")
+    st.metric("Top Sector", "IT")
 with col4:
-    st.metric("Avg R:R Ratio", "2.8:1", "+0.3")
+    st.metric("Avg R:R Ratio", "2.8:1")
 st.markdown("---")
 
-st.subheader("📈 Current Trading Signals")
+st.subheader("📈 Trading Signals")
 if len(df_filtered) > 0:
     display_df = df_filtered[[
         "Symbol", "Strategy", "Current_Price", "Entry_Price",
         "Stop_Loss", "Target_1", "Risk_Reward", "Backtest_WinRate"
     ]].copy()
-    display_df.columns = ["Symbol", "Strategy", "Current", "Entry", "SL", "Target", "R:R", "Win%"]
-    st.dataframe(
-        display_df,
-        width="stretch",
-        height=400,
-        column_config={
-            "Symbol": st.column_config.TextColumn(width="small"),
-            "Win%": st.column_config.ProgressColumn(min_value=50, max_value=100)
-        }
-    )
+    display_df.columns = ["Symbol", "Strategy", "Price", "Entry", "SL", "Target", "R:R", "Win%"]
+    st.dataframe(display_df, use_container_width=True, height=400)
 else:
-    st.warning("No signals match current filters. Adjust criteria.")
+    st.warning("No signals match filters.")
 st.markdown("---")
 
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("Strategy Performance")
-    strategy_data = df_filtered.groupby("Strategy").agg({"Symbol": "count", "Backtest_WinRate": "mean"})
-    strategy_data.columns = ["Signals", "Avg Win %"]
-    st.bar_chart(strategy_data["Signals"])
+    st.subheader("By Strategy")
+    strategy_stats = df_filtered.groupby("Strategy").size()
+    st.bar_chart(strategy_stats)
 with col2:
-    st.subheader("Sector Breakdown")
-    sector_data = df_filtered["Sector"].value_counts()
-    st.bar_chart(sector_data)
+    st.subheader("By Sector")
+    sector_stats = df_filtered["Sector"].value_counts()
+    st.bar_chart(sector_stats)
 st.markdown("---")
-st.caption("✅ Dashboard Status: LIVE | Strategies: Demand Zone Reversal + RS Momentum Surge")
+st.caption("✅ Status: LIVE")
